@@ -213,3 +213,54 @@
   instance2.getTime(); // 2013
 
 ```
+
+#多继承
+---
+```
+// 单继承 属性复制
+var extend = function(target, source) {
+  //遍历源对象中的属性
+  for(var property in source) {
+    // 将源对象中的属性复制到目标对象中
+    target[property] = source[property];
+  }
+  // 返回目标对象
+  return target;
+}
+```
+>注意：
+ 这个extend方法是一个浅复制过程，他只能复制值类型的属性，对于引用类型的属性它无能为力。
+
+ ```
+// 多继承 属性复制
+var mix = function() {
+  var i = 1,
+    len = arguments.length,
+    target = arguments[0],
+    arg;
+  // 遍历被继承的对象
+  for (;i<len;i++) {
+    // 缓存当前对象
+    arg = arguments[i];
+    for (var property in arg) {
+      // 将被继承对象中的属性复制到目标对象中
+      target[property] = arg[property];
+    }
+  }
+  // 返回目标对象
+  return target;
+}
+ ```
+>以上代码均为浅拷贝，深拷贝代码如下，原理是将object类型转换成字符串这种值类型数据，通过JSON.parse转换成json对象。这是一种取巧的方式。
+```
+var extend = function(target,source) {
+  for(var property in source) {
+    if(typeof source[property] == 'object') {
+      target[property] = JSON.parse(JSON.stringify(source[property]));
+    } else {
+      target[property] = source[property];
+    }
+  }
+  return target;
+}
+```

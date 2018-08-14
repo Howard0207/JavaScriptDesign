@@ -28,6 +28,39 @@ newBook.alikeBook.push('xml book');
 var otherBook = createBook(book);
 otherBook.alikeBook.push('as book');
 
-console.log(book.alikeBook);
-console.log(newBook.alikeBook);
-console.log(otherBook.alikeBook);
+// console.log(book.alikeBook);
+// console.log(newBook.alikeBook);
+// console.log(otherBook.alikeBook);
+
+
+var extend = function(target,source) {
+  for(var property in source) {
+    if(typeof source[property] == 'object') {
+      target[property] = JSON.parse(JSON.stringify(source[property]));
+    } else {
+      target[property] = source[property];
+    }
+  }
+  return target;
+}
+
+var target = {};
+var source = {
+  name: 'xiaoming',
+  book: ['js','css','html'],
+  school: {
+    name: '剑桥',
+    class: '3',
+    grade: '3'
+  },
+  getName() {
+    console.log(this.school.name);
+  }
+};
+extend(target,source);
+
+target.book.push('设计模式');
+target.school.name = '清华大学';
+console.log(target);
+console.log(source);
+target.getName();
