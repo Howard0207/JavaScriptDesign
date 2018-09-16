@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>封装Promise</title>
+</head>
+<body>
+<button id="btn">按钮</button>
+</body>
+<script>
+
+var EventCenter = (function(){
+  var events = {};
+  function on(evt, handler){
+    events[evt] = events[evt] || [];
+    events[evt].push({
+      handler:handler
+    })
+  }
+  function fire(evt, arg){
+    if(!events[evt]){
+      return
+    }
+    for(var i=0; i < events[evt].length; i++){
+      var param = arg.PromiseValue;
+      var funName = events[evt][i].handler.name;
+      if(arg.PromiseStatus=="resolved") {
+        if(funName!='catchM'){
+          events[evt][i].handler(param);
+          continue;
+        } else {
+          continue;
+        }
+      } else if(arg.PromiseStatus=="rejected"){
+        if(funName=='catchM'){
+          events[evt][i].handler(param);
+          continue;
+        } else {
+          continue;
+        }
+
+      } else {
+        continue;
+      }
+    }
+    arg.PromiseValue = undefined;
+  }
+  function off(evt){
+    delete events[evt];
+  }
+  return {
+    on:on,
+    fire:fire,
+    off:off
+  }
+}());
+
+
+var Opromise = function(func) {
+
+  this.PromiseValue = null;
+  this.PromiseStatus = "pending";
+  this.PromiseSymbol = new Date().getTime().toString();
+
+  if(func instanceof Function) {
+    func(this.resolve.bind(this),this.reject.bind(this));
+  } else {
+    throw new Error("传入属性必须为方法");
+  }
+}
+
+Opromise.resolve = function(param) {
+  var temp = new Opromise(function () {});
+  temp.PromiseValue = param;
+  temp.PromiseStatus = "resolved";
+  return temp;
+}
+
+Opromise.reject = function(param) {
+  var temp = new Opromise(function () {});
+  temp.PromiseValue = param;
+  temp.PromiseStatus = "rejected";
+  return temp;
+}
+
+Opromise.all = function() {
+  var arr = arguments,
+      len=arr.length,
+      index = 0,
+      res = [],
+      temp = new Opromise(function() {});
+  for(var i=0;i<len;i++) {
+    if(!(arr[i] instanceof  Opromise)){
+      throw new Error('parameter is not a instance of Opromise');
+      return false;
+    } else {
+      arr[i].then(function(param){
+        res.push(param);
+        index++;
+        monitor();
+      }).catch(function(param){
+        temp.reject();
+        // throw new Error('executed error: Opromise catch an error and reject the "Opromise.all"');
+      });
+    }
+  }
+
+  function monitor() {
+    if(index==len) {
+      temp.resolve(res);
+    }
+  }
+
+  return temp;
+}
+
+
+Opromise.prototype.resolve = function(param) {
+  var _this = this;
+  this.PromiseValue = param;
+  this.PromiseStatus = "resolved";
+  var value = this.PromiseSymbol;
+  EventCenter.fire(value, _this);
+  return this;
+}
+
+
+Opromise.prototype.reject = function(param) {
+  var _this = this;
+  this.PromiseValue = param;
+  this.PromiseStatus = "rejected";
+  var value = this.PromiseSymbol;
+  EventCenter.fire(value, _this);
+  return this;
+}
+
+
+
+Opromise.prototype.then = function(func) {
+  if(!(func instanceof Function)) {throw new Error("function is required here in Opromise then method");}
+  switch(this.PromiseStatus) {
+    case "rejected":
+      return this;
+    case "resolved":
+      func(this.PromiseValue);
+      return Opromise.resolve();
+    case "pending":
+      var param = this.PromiseValue;
+      var key = this.PromiseSymbol;
+      var temp = this;
+      EventCenter.on(key, function then(param){
+        var promise = func(param);
+        if(promise instanceof Opromise) {
+          if(promise.PromiseStatus=="resolved") {
+            temp.PromiseValue = promise.PromiseValue;
+            temp.PromiseStatus = promise.PromiseStatus;
+          } else {
+            temp.PromiseValue = promise.PromiseValue;
+            temp.PromiseStatus = promise.PromiseStatus;
+          }
+        }
+      });
+      return temp;
+  }
+}
+
+Opromise.prototype.catch = function(func) {
+  if(!(func instanceof Function)) {throw new Error("function is required here in Opromise then method");}
+  switch(this.PromiseStatus) {
+    case "rejected":
+      func(this.PromiseValue);
+      return false;
+    case "resolved":
+      return this;
+    case "pending":
+      var param = this.PromiseValue;
+      var key = this.PromiseSymbol;
+      var temp = this;
+      EventCenter.on(key, function catchM(param){
+        var promise = func(param);
+        if(promise instanceof Opromise) {
+          if(promise.PromiseStatus=="rejected") {
+            temp.PromiseValue = promise.PromiseValue;
+            temp.PromiseStatus = promise.PromiseStatus;
+          } else {
+            temp.PromiseValue = promise.PromiseValue;
+            temp.PromiseStatus = promise.PromiseStatus;
+          }
+        }
+      });
+      return temp;
+  }
+}
+
+
+
+var a = new Opromise(function(resolve,reject){
+  var btn = document.querySelector('#btn');
+  btn.onclick = function() {
+    reject("success");
+  }
+});
+// a.then(function(param){
+//   console.log(param);
+//   return Opromise.reject('hello');
+// }).then(function(param) {
+//   console.log('123'+param);
+// }).catch(function(param) {
+//   console.log(param);
+// })
+
+
+var b = new Opromise(function(resolve,reject) {
+  resolve(123);
+});
+// b.then(function(){
+//   console.log('abc')
+// }).catch(function(){
+//   console.log('bcd');
+// });
+
+Opromise.all(a,b).then(function(param) {
+  console.log(param);
+}).catch(function(param){
+  console.log("bbb"+param);
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*var aaa = new Opromise(function(resolve,reject){
+  var btn2 = document.querySelector('#btn2');
+  console.log('sddf');
+  btn2.onclick = function() {
+    resolve('123');
+  }
+})
+
+aaa.then(function(param) {
+  console.log(param);
+})*/
+</script>
+</html>
