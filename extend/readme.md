@@ -143,7 +143,7 @@
   // 声明基对象
   var book = {
     name: 'js book',
-    alikeBook: ['css book','html book]
+    alikeBook: ['css book','html book']
   };
   function createBook(obj) {
     // 通过原型继承方式创建新对象
