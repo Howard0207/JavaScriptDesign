@@ -42,17 +42,33 @@ var EventCenter = (function () {
     }
 }());
 
+
+var generateUUID = function() {
+    var s = [];
+    var hexDigits = "0123456789abcdef";
+    for (var i = 0; i < 36; i++) {
+        s[i] = hexDigits.substr(Math.floor(Math.random() * 0x10), 1);
+    }
+    s[14] = "4"; // bits 12-15 of the time_hi_and_version field to 0010
+    s[19] = hexDigits.substr((s[19] & 0x3) | 0x8, 1); // bits 6-7 of the clock_seq_hi_and_reserved to 01
+    s[8] = s[13] = s[18] = s[23] = "-";
+
+    var uuid = s.join("");
+    return uuid;
+}
+
+
 /**
  * Opromise is a constructor of Promise self defined, which static property contains 'PromiseValue', 'PromiseStatus' and 'PromiseSymbol', and it receives a function as parameter.
  */
 var Opromise = function (func) {
     this.PromiseValue = null;
     this.PromiseStatus = "pending";
-    this.PromiseSymbol = new Date().getTime().toString();
+    this.PromiseSymbol = generateUUID();
     if (func instanceof Function) {
         func(this.resolve.bind(this), this.reject.bind(this));
     } else {
-        throw new Error("The parameter expected to be a function");
+        throw new Error("The parameter is expected to be a function");
     }
 }
 
@@ -114,6 +130,7 @@ Opromise.prototype.resolve = function (param) {
     this.PromiseStatus = "resolved";
     var value = this.PromiseSymbol;
     EventCenter.fire(value, _this);
+    EventCenter.off(value);
     return this;
 }
 
@@ -124,6 +141,7 @@ Opromise.prototype.reject = function (param) {
     this.PromiseStatus = "rejected";
     var value = this.PromiseSymbol;
     EventCenter.fire(value, _this);
+    EventCenter.off(value);
     return this;
 }
 
